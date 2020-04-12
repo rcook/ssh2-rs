@@ -26,6 +26,13 @@ Starting with version `0.4` of `ssh2`, you can enable the `vendored-openssl` fea
 to have `libssh2` built against a statically built version of openssl as [described
 here](https://docs.rs/openssl/0.10.24/openssl/#vendored)
 
+## Force static linking of OpenSSL on Windows
+
+```ps
+$env:OPENSSL_STATIC = '1'
+$env:RUSTFLAGS = '-Ctarget-feature=+crt-static'
+```
+
 # License
 
 This project is licensed under either of
@@ -42,3 +49,5 @@ at your option.
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in this project by you, as defined in the Apache-2.0 license,
 shall be dual licensed as above, without any additional terms or conditions.
+
+[wincng]: https://docs.microsoft.com/en-us/windows/win32/seccng/cng-portal

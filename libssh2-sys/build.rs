@@ -1,9 +1,6 @@
 extern crate cc;
 extern crate pkg_config;
 
-#[cfg(target_env = "msvc")]
-extern crate vcpkg;
-
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -84,8 +81,15 @@ fn main() {
 
     if target.contains("windows") {
         cfg.include("libssh2/win32");
-        cfg.define("LIBSSH2_WINCNG", None);
-        cfg.file("libssh2/src/wincng.c");
+        cfg.define("HAVE_SNPRINTF", None);
+        cfg.define("HAVE_IOCTLSOCKET", None);
+        cfg.define("HAVE_INTTYPES_H", None);
+        cfg.define("HAVE_STDLIB_H", None);
+        cfg.define("HAVE_SYS_SELECT_H", None);
+        cfg.define("LIBSSH2_OPENSSL", None);
+        cfg.define("HAVE_EVP_AES_128_CTR", None);
+
+        cfg.file("libssh2/src/openssl.c");
     } else {
         cfg.flag("-fvisibility=hidden");
         cfg.define("HAVE_SNPRINTF", None);
@@ -104,17 +108,17 @@ fn main() {
         cfg.define("HAVE_POLL", None);
 
         cfg.file("libssh2/src/openssl.c");
-
-        // Create `libssh2_config.h`
-        let config = fs::read_to_string("libssh2/src/libssh2_config_cmake.h.in").unwrap();
-        let config = config
-            .lines()
-            .filter(|l| !l.contains("#cmakedefine"))
-            .collect::<Vec<_>>()
-            .join("\n");
-        fs::write(build.join("libssh2_config.h"), &config).unwrap();
-        cfg.include(&build);
     }
+
+    // Create `libssh2_config.h`
+    let config = fs::read_to_string("libssh2/src/libssh2_config_cmake.h.in").unwrap();
+    let config = config
+        .lines()
+        .filter(|l| !l.contains("#cmakedefine"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    fs::write(build.join("libssh2_config.h"), &config).unwrap();
+    cfg.include(&build);
 
     /* Enable newer diffie-hellman-group-exchange-sha1 syntax */
     cfg.define("LIBSSH2_DH_GEX_NEW", None);
@@ -176,38 +180,6 @@ fn main() {
     }
 }
 
-#[cfg(not(target_env = "msvc"))]
 fn try_vcpkg() -> bool {
     false
-}
-
-#[cfg(target_env = "msvc")]
-fn try_vcpkg() -> bool {
-    vcpkg::Config::new()
-        .emit_includes(true)
-        .probe("libssh2")
-        .map(|_| {
-            // found libssh2 which depends on openssl and zlib
-            vcpkg::Config::new()
-                .lib_name("libeay32")
-                .lib_name("ssleay32")
-                .probe("openssl")
-                .expect(
-                    "configured libssh2 from vcpkg but could not \
-                     find openssl libraries that it depends on",
-                );
-
-            vcpkg::Config::new()
-                .lib_names("zlib", "zlib1")
-                .probe("zlib")
-                .expect(
-                    "configured libssh2 from vcpkg but could not \
-                     find the zlib library that it depends on",
-                );
-
-            println!("cargo:rustc-link-lib=crypt32");
-            println!("cargo:rustc-link-lib=gdi32");
-            println!("cargo:rustc-link-lib=user32");
-        })
-        .is_ok()
 }

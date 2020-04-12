@@ -13,19 +13,11 @@ description = "Native bindings to the libssh2 library"
 name = "libssh2_sys"
 path = "lib.rs"
 
-[features]
-vendored-openssl = ["openssl-sys/vendored"]
-
 [dependencies]
 libz-sys = "1.0.21"
 libc = "0.2"
-
-[target."cfg(unix)".dependencies]
-openssl-sys = "0.9.35"
+openssl-sys = { version = "0.9.35", features = [ "vendored" ] }
 
 [build-dependencies]
 pkg-config = "0.3.11"
 cc = "1.0.25"
-
-[target.'cfg(target_env = "msvc")'.build-dependencies]
-vcpkg = "0.2"
